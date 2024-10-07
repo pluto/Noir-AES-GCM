@@ -1,6 +1,9 @@
-use crate::utils::{blocks_to_bits, bits_to_block, bitwise_right_shift};
+use crate::utils::{blocks_to_bits, bits_to_block, bitwise_right_shift, Block};
 
-type Block = [u8; 16];
+
+
+
+
 
 /// Multiplication of the binary extension field by x
 /// right shifts a block by one bit

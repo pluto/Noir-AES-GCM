@@ -1,3 +1,5 @@
+pub(crate) type Block = [u8; 16];
+
 pub(crate) fn bitwise_right_shift(bits: [u8; 128]) -> [u8; 128] {
     let mut result: [u8; 128] = [0; 128];
     result[0] = 0;
