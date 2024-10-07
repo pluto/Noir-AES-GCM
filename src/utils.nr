@@ -1,4 +1,12 @@
-pub(crate) type Block = [u8; 16];
+type Block = [u8; 16];
+
+pub(crate) fn block_xor(block1: Block, block2: Block) -> Block {
+    let mut result: Block = [0; 16];
+    for i in 0..16 {
+        result[i] = block1[i] ^ block2[i];
+    }
+    result
+}
 
 pub(crate) fn bitwise_right_shift(bits: [u8; 128]) -> [u8; 128] {
     let mut result: [u8; 128] = [0; 128];
@@ -9,8 +17,8 @@ pub(crate) fn bitwise_right_shift(bits: [u8; 128]) -> [u8; 128] {
     result
 }
 
-pub(crate) fn bits_to_block(bits: [u8; 128]) -> [u8; 16] {
-    let mut bytes: [u8; 16] = [0; 16];
+pub(crate) fn bits_to_block(bits: [u8; 128]) -> Block {
+    let mut bytes: Block = [0; 16];
     for i in 0..16 {
         let mut byte_bits: [u8; 8] = [0; 8];
         for j in 0..8 {
@@ -21,7 +29,7 @@ pub(crate) fn bits_to_block(bits: [u8; 128]) -> [u8; 16] {
     bytes
 }
 
-pub(crate) fn blocks_to_bits(bytes: [u8; 16]) -> [u8; 128] {
+pub(crate) fn blocks_to_bits(bytes: Block) -> [u8; 128] {
     let mut bits: [u8; 128] = [0; 128];
     for i in 0..16 {
         let byte_bits = byte_to_bits(bytes[i]);

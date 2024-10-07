@@ -1,8 +1,25 @@
-use crate::utils::{blocks_to_bits, bits_to_block, bitwise_right_shift, Block};
+use crate::utils::{blocks_to_bits, bits_to_block, bitwise_right_shift, Block, block_xor};
 
+fn gmul(x: Block, y: Block) -> Block {
+    let mut result: Block = [0; 16];
+    let mut accumulator: Block = y;
+    let x_bits = blocks_to_bits(x);
+    for i in 0..127 {
+        if x_bits[i] == 1 {
+            result = block_xor(result, accumulator);
+        }
+        accumulator = mulx(accumulator);
+    }
+    result
+}
 
-
-
+#[test]
+fn test_gmul() {
+    let x: Block = [0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00];
+    let y: Block = [0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00];
+    let expected: Block = [0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00];
+    assert(gmul(x, y) == expected);
+}
 
 
 /// Multiplication of the binary extension field by x
@@ -10,7 +27,7 @@ use crate::utils::{blocks_to_bits, bits_to_block, bitwise_right_shift, Block};
 /// if the msb is one, then the 8 most LSBs are XORed with 0xE1
 /// this 0xE1 is the the hex rep of 11100001, which represents 
 /// the polynomial 1 + x + x^2 + x^7
-fn mulx(block: Block) -> [u8; 16] {
+fn mulx(block: Block) -> Block {
     let mut bits = blocks_to_bits(block);
     let result_bits = bitwise_right_shift(bits);
     let mut bytes = bits_to_block(result_bits);
