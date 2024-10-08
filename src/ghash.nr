@@ -31,7 +31,8 @@ use crate::utils::{blocks_to_bits, bits_to_block, bitwise_right_shift, Block, bl
 //      ┌─────────┐      │      ┌─────────┐       │      ┌─────────┐
 //      │  TAG1   │ ─────┘      │   TAG2  │ ──────┘      │   TAGM  │
 //      └─────────┘             └─────────┘              └─────────┘
-fn ghash(hash_key: Block, message: [Block; 2]) -> Block {
+// todo: handle arbitrary number of blocks
+fn ghash<N>(hash_key: Block, message: [Block; N]) -> Block {
     let mut tag = [0; 16];
     for i in 0..2 {
         tag = block_xor(tag, message[i]);

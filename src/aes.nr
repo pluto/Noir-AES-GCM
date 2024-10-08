@@ -2,9 +2,9 @@
 type State = [[u8; 4]; 4];
 
 
-fn mix_columns(state: State) -> State {
-    // TODO
-}
+// fn mix_columns(state: State) -> State {
+//     // TODO
+// }
 
 // ShiftRows: Performs circular left shift on each row
 // 0, 1, 2, 3 shifts for rows 0, 1, 2, 3 respectively
