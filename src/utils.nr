@@ -1,4 +1,5 @@
 type Block = [u8; 16];
+type State = [[u8; 4]; 4];
 
 pub(crate) fn block_xor(block1: Block, block2: Block) -> Block {
     let mut result: Block = [0; 16];
@@ -6,6 +7,45 @@ pub(crate) fn block_xor(block1: Block, block2: Block) -> Block {
         result[i] = block1[i] ^ block2[i];
     }
     result
+}
+
+pub(crate) fn block_to_state(block: Block) -> State {
+    let mut state: State = [[0; 4]; 4];
+    for i in 0..4 {
+        for j in 0..4 {
+            state[j][i] = block[i * 4 + j]; // Change the indexing to column-major order
+        }
+    }
+    state
+}
+
+pub(crate) fn state_to_block(state: State) -> Block {
+    let mut block: Block = [0; 16];
+    for i in 0..4 {
+        for j in 0..4 {
+            block[i * 4 + j] = state[j][i];
+        }
+    }
+    block
+}
+
+
+#[test]
+fn test_block_to_state() {
+    let block: Block = [0x00; 16];
+    let state: State = [[0x00; 4]; 4];
+    assert(block_to_state(block) == state);
+    assert(state_to_block(state) == block);
+
+    let block1: Block =  [0x32, 0x88, 0x31, 0xe0, 0x43, 0x5a, 0x31, 0x37, 0xf6, 0x30, 0x98, 0x07, 0xa8, 0x8d, 0xa2, 0x34];
+    let state1: State = [
+            [0x32, 0x43, 0xf6, 0xa8],
+            [0x88, 0x5a, 0x30, 0x8d],
+            [0x31, 0x31, 0x98, 0xa2],
+            [0xe0, 0x37, 0x07, 0x34],
+    ];
+    assert(block_to_state(block1) == state1);
+    assert(state_to_block(state1) == block1);
 }
 
 pub(crate) fn bitwise_right_shift(bits: [u8; 128]) -> [u8; 128] {

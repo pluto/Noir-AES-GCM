@@ -1,26 +1,18 @@
-use crate::utils::{byte_to_bits, bits_to_byte};
-type State = [[u8; 4]; 4];
+use crate::utils::{byte_to_bits, bits_to_byte, State};
+// type State = [[u8; 4]; 4];
 
 
-#[test]
-fn test_gfmulx() {
-    assert(gfmulx(0x01) == 0x02);
-    assert(gfmulx(0x02) == 0x04);
-    assert(gfmulx(0x03) == 0x06);
+fn add_round_key(state: State, key: State) -> State {
+    let mut new_state: State = [[0; 4]; 4];
+    for i in 0..4 {
+        for j in 0..4 {
+            new_state[i][j] = state[i][j] ^ key[j][i];
+        }
+    }
+    new_state
 }
 
 
-// 2, 3, 1, 1,
-// 1, 2, 3, 1,
-// 1, 1, 2, 3, 
-// 3, 1, 1, 2,
-// such that the new column is defined as:
-// 
-// [2*col[0] XOR 3*col[1] XOR col[2] XOR col[3],
-//  col[0] XOR 2*col[1] XOR 3*col[2] XOR col[3],
-//  col[0] XOR col[1] XOR 2*col[2] XOR 3*col[3],
-//  3*col[0] XOR col[1] XOR col[2] XOR 2*col[3]]
-// 
 // where the multiplication is done in GF(2^8) mod the irreducible polynomial x^8 + x^4 + x^3 + x + 1
 // the multiplaction of 1 is multipication by 1, (binary 00000001)
 // the multiplaction of 2 is multipication by x, (binary 00000010)
@@ -211,3 +203,28 @@ fn test_sbox() {
     assert(sbox(0x00) == 0x63);
 }
 
+
+#[test]
+fn test_add_round_key() {
+
+    let state: State = [
+        [4, 224, 72, 40],
+        [102, 203, 248, 6],
+        [129, 25, 211, 38],
+        [229, 154, 122, 76],
+    ];
+    let roundKey: State = [
+        [160, 250, 254, 23],
+        [136, 84, 44, 177],
+        [35, 163, 57, 57],
+        [42, 108, 118, 5],
+    ];
+
+    let newState: State = [
+        [164, 104, 107, 2],
+        [156, 159, 91, 106],
+        [127, 53, 234, 80],
+        [242, 43, 67, 73],
+    ];
+    assert(add_round_key(state, roundKey) == newState);
+}
