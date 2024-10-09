@@ -31,35 +31,27 @@ fn test_gfmulx() {
 // [s'1,c] = [1 2 3 1][s1,c]
 // [s'2,c]   [1 1 2 3][s2,c]
 // [s'3,c]   [3 1 1 2][s3,c]
+// todo this can certainly be done with a few for loops
 fn mix_columns(state: State) -> State {
-    let mut new_state = state;
-    for c in 0..4 {
-        new_state[0][c] = mix_column(state[0])[c];
-        new_state[1][c] = mix_column(state[1])[c];
-        new_state[2][c] = mix_column(state[2])[c];
-        new_state[3][c] = mix_column(state[3])[c];
-    }
+    let mut new_state: State = state;
+    let c1 = [state[0][0], state[1][0], state[2][0], state[3][0]];
+    let c2 = [state[0][1], state[1][1], state[2][1], state[3][1]];
+    let c3 = [state[0][2], state[1][2], state[2][2], state[3][2]];
+    let c4 = [state[0][3], state[1][3], state[2][3], state[3][3]];
+
+    let c1_new = mix_column(c1);
+    let c2_new = mix_column(c2);
+    let c3_new = mix_column(c3);
+    let c4_new = mix_column(c4);
+
+    new_state = [[c1_new[0], c2_new[0], c3_new[0], c4_new[0]],
+                  [c1_new[1], c2_new[1], c3_new[1], c4_new[1]],
+                  [c1_new[2], c2_new[2], c3_new[2], c4_new[2]],
+                  [c1_new[3], c2_new[3], c3_new[3], c4_new[3]]];
     new_state
 }
 
-#[test]
-fn tmix_columns() {
-    let state = [
-      [0xd4, 0xe0, 0xb8, 0x1e],
-      [0xbf, 0xb4, 0x41, 0x27],
-      [0x5d, 0x52, 0x11, 0x98],
-      [0x30, 0xae, 0xf1, 0xe5],
-    ];
 
-    let out = [
-      [0x04, 0xe0, 0x48, 0x28],
-      [0x66, 0xcb, 0xf8, 0x06],
-      [0x81, 0x19, 0xd3, 0x26],
-      [0xe5, 0x9a, 0x7a, 0x4c],
-    ];
-    println(mix_columns(state));
-    assert(mix_columns(state) == out);
-}
 
 fn mix_column(column: [u8; 4]) -> [u8; 4] {
     let mut new_column = [0; 4];
@@ -75,7 +67,6 @@ fn s0(column: [u8; 4]) -> u8 {
 }
 
 fn s1(column: [u8; 4]) -> u8 {
-    // 0xd4,             0xbf,              0x5d,        0x30
     column[0] ^ gfmulx(column[1]) ^ gfmul3(column[2]) ^ column[3]
 }
 
@@ -85,33 +76,6 @@ fn s2(column: [u8; 4]) -> u8 {
 
 fn s3(column: [u8; 4]) -> u8 {
     gfmul3(column[0]) ^ column[1] ^ column[2] ^ gfmulx(column[3])
-}
-
-#[test]
-fn ts0() {
-    assert(s0([0xd4, 0xbf, 0x5d, 0x30]) == 0x04);
-}
-
-#[test]
-fn ts1() {
-    assert(s1([0xd4, 0xbf, 0x5d, 0x30]) == 0x66);
-}
-
-#[test]
-fn ts2() {
-    assert(s2([0xd4, 0xbf, 0x5d, 0x30]) == 0x81);
-}
-
-#[test]
-fn ts3() {
-    assert(s3([0xd4, 0xbf, 0x5d, 0x30]) == 0xe5);
-}
-
-#[test]
-fn tmix_column() {
-    let column = [0xd4, 0xbf, 0x5d, 0x30];
-    let expected = [0x04, 0x66, 0x81, 0xe5];
-    assert(mix_column(column) == expected);
 }
 
 fn gfmul3(byte: u8) -> u8 {
@@ -132,13 +96,6 @@ fn gfmulx(byte: u8) -> u8 {
     result_byte
 }
 
-#[test]
-fn gfmulx_aes() {
-    assert(gfmulx(0x01) == 0x02);
-    assert(gfmulx(0x02) == 0x04);
-    assert(gfmulx(0x03) == 0x06);
-    assert(gfmulx(0xbf) == 0x65);
-}
 
 // ShiftRows: Performs circular left shift on each row
 // 0, 1, 2, 3 shifts for rows 0, 1, 2, 3 respectively
@@ -174,6 +131,59 @@ fn sbox(byte: u8) -> u8 {
         0x8c, 0xa1, 0x89, 0x0d, 0xbf, 0xe6, 0x42, 0x68, 0x41, 0x99, 0x2d, 0x0f, 0xb0, 0x54, 0xbb, 0x16
     ];
     sbox[byte]
+}
+
+#[test]
+fn ts0() {
+    assert(s0([0xd4, 0xbf, 0x5d, 0x30]) == 0x04);
+}
+
+#[test]
+fn ts1() {
+    assert(s1([0xd4, 0xbf, 0x5d, 0x30]) == 0x66);
+}
+
+#[test]
+fn ts2() {
+    assert(s2([0xd4, 0xbf, 0x5d, 0x30]) == 0x81);
+}
+
+#[test]
+fn ts3() {
+    assert(s3([0xd4, 0xbf, 0x5d, 0x30]) == 0xe5);
+}
+
+#[test]
+fn tmix_column() {
+    let column = [0xd4, 0xbf, 0x5d, 0x30];
+    let expected = [0x04, 0x66, 0x81, 0xe5];
+    assert(mix_column(column) == expected);
+}
+#[test]
+fn tmix_columns() {
+    let state = [
+      [0xd4, 0xe0, 0xb8, 0x1e],
+      [0xbf, 0xb4, 0x41, 0x27],
+      [0x5d, 0x52, 0x11, 0x98],
+      [0x30, 0xae, 0xf1, 0xe5],
+    ];
+
+    let out = [
+      [0x04, 0xe0, 0x48, 0x28],
+      [0x66, 0xcb, 0xf8, 0x06],
+      [0x81, 0x19, 0xd3, 0x26],
+      [0xe5, 0x9a, 0x7a, 0x4c],
+    ];
+    assert(mix_columns(state) == out);
+}
+
+
+#[test]
+fn gfmulx_aes() {
+    assert(gfmulx(0x01) == 0x02);
+    assert(gfmulx(0x02) == 0x04);
+    assert(gfmulx(0x03) == 0x06);
+    assert(gfmulx(0xbf) == 0x65);
 }
 
 
