@@ -1,51 +1,51 @@
-type Block = [u8; 16];
-type State = [[u8; 4]; 4];
+type Stream = [u8; 16];
+type Block = [[u8; 4]; 4];
 
-pub(crate) fn block_xor(block1: Block, block2: Block) -> Block {
-    let mut result: Block = [0; 16];
+pub(crate) fn stream_xor(stream1: Stream, stream2: Stream) -> Stream {
+    let mut result: Stream = [0; 16];
     for i in 0..16 {
-        result[i] = block1[i] ^ block2[i];
+        result[i] = stream1[i] ^ stream2[i];
     }
     result
 }
 
-pub(crate) fn block_to_state(block: Block) -> State {
-    let mut state: State = [[0; 4]; 4];
+pub(crate) fn stream_to_block(stream: Stream) -> Block {
+    let mut block: Block = [[0; 4]; 4];
     for i in 0..4 {
         for j in 0..4 {
-            state[j][i] = block[i * 4 + j]; // Change the indexing to column-major order
-        }
-    }
-    state
-}
-
-pub(crate) fn state_to_block(state: State) -> Block {
-    let mut block: Block = [0; 16];
-    for i in 0..4 {
-        for j in 0..4 {
-            block[i * 4 + j] = state[j][i];
+            block[j][i] = stream[i * 4 + j]; // Change the indexing to column-major order
         }
     }
     block
 }
 
+pub(crate) fn block_to_stream(block: Block) -> Stream {
+    let mut stream: Stream = [0; 16];
+    for i in 0..4 {
+        for j in 0..4 {
+            stream[i * 4 + j] = block[j][i];
+        }
+    }
+    stream
+}
+
 
 #[test]
-fn test_block_to_state() {
-    let block: Block = [0x00; 16];
-    let state: State = [[0x00; 4]; 4];
-    assert(block_to_state(block) == state);
-    assert(state_to_block(state) == block);
+fn test_stream_to_state() {
+    let stream: Stream = [0x00; 16];
+    let state: Block = [[0x00; 4]; 4];
+    assert(stream_to_block(stream) == state);
+    assert(block_to_stream(state) == stream);
 
-    let block1: Block =  [0x32, 0x88, 0x31, 0xe0, 0x43, 0x5a, 0x31, 0x37, 0xf6, 0x30, 0x98, 0x07, 0xa8, 0x8d, 0xa2, 0x34];
-    let state1: State = [
+    let stream1: Stream =  [0x32, 0x88, 0x31, 0xe0, 0x43, 0x5a, 0x31, 0x37, 0xf6, 0x30, 0x98, 0x07, 0xa8, 0x8d, 0xa2, 0x34];
+    let state1: Block = [
             [0x32, 0x43, 0xf6, 0xa8],
             [0x88, 0x5a, 0x30, 0x8d],
             [0x31, 0x31, 0x98, 0xa2],
             [0xe0, 0x37, 0x07, 0x34],
     ];
-    assert(block_to_state(block1) == state1);
-    assert(state_to_block(state1) == block1);
+    assert(stream_to_block(stream1) == state1);
+    assert(block_to_stream(state1) == stream1);
 }
 
 pub(crate) fn bitwise_right_shift(bits: [u8; 128]) -> [u8; 128] {
@@ -57,8 +57,8 @@ pub(crate) fn bitwise_right_shift(bits: [u8; 128]) -> [u8; 128] {
     result
 }
 
-pub(crate) fn bits_to_block(bits: [u8; 128]) -> Block {
-    let mut bytes: Block = [0; 16];
+pub(crate) fn bits_to_stream(bits: [u8; 128]) -> Stream {
+    let mut bytes: Stream = [0; 16];
     for i in 0..16 {
         let mut byte_bits: [u8; 8] = [0; 8];
         for j in 0..8 {
@@ -69,7 +69,7 @@ pub(crate) fn bits_to_block(bits: [u8; 128]) -> Block {
     bytes
 }
 
-pub(crate) fn blocks_to_bits(bytes: Block) -> [u8; 128] {
+pub(crate) fn stream_to_bits(bytes: Stream) -> [u8; 128] {
     let mut bits: [u8; 128] = [0; 128];
     for i in 0..16 {
         let byte_bits = byte_to_bits(bytes[i]);
@@ -134,9 +134,9 @@ fn test_bitwise_right_shift() {
 }
 
 #[test]
-fn test_blocks_to_bits() {
-    assert(blocks_to_bits([0x00; 16]) == [0; 128]);
-    assert(bits_to_block([0; 128]) == [0x00; 16]);
+fn test_Streams_to_bits() {
+    assert(stream_to_bits([0x00; 16]) == [0; 128]);
+    assert(bits_to_stream([0; 128]) == [0x00; 16]);
     let expected_output1 = [
         0, 0, 0, 0, 0, 0, 0, 1,
         0, 0, 0, 0, 0, 0, 0, 1,
@@ -156,8 +156,8 @@ fn test_blocks_to_bits() {
         0, 0, 0, 0, 0, 0, 0, 1
     ];
 
-    assert(bits_to_block(expected_output1) == [0x01; 16]);
-    assert(blocks_to_bits([0x01; 16]) == expected_output1);
+    assert(bits_to_stream(expected_output1) == [0x01; 16]);
+    assert(stream_to_bits([0x01; 16]) == expected_output1);
     let expected_output2 = [
         0, 0, 0, 0, 0, 0, 1, 0,
         0, 0, 0, 0, 0, 0, 1, 0,
@@ -176,8 +176,8 @@ fn test_blocks_to_bits() {
         0, 0, 0, 0, 0, 0, 1, 0,
         0, 0, 0, 0, 0, 0, 1, 0
     ];
-    assert(bits_to_block(expected_output2) == [0x02; 16]);
-    assert(blocks_to_bits([0x02; 16]) == expected_output2);
+    assert(bits_to_stream(expected_output2) == [0x02; 16]);
+    assert(stream_to_bits([0x02; 16]) == expected_output2);
     let expected_output3 = [
         0, 0, 0, 0, 0, 0, 1, 1,
         0, 0, 0, 0, 0, 0, 1, 1,
@@ -197,8 +197,8 @@ fn test_blocks_to_bits() {
         0, 0, 0, 0, 0, 0, 1, 1
     ];
 
-    assert(bits_to_block(expected_output3) == [0x03; 16]);
-    assert(blocks_to_bits([0x03; 16]) == expected_output3);
+    assert(bits_to_stream(expected_output3) == [0x03; 16]);
+    assert(stream_to_bits([0x03; 16]) == expected_output3);
     let expected_output4 = [
         0, 0, 0, 0, 0, 1, 0, 0,
         0, 0, 0, 0, 0, 1, 0, 0,
@@ -217,8 +217,8 @@ fn test_blocks_to_bits() {
         0, 0, 0, 0, 0, 1, 0, 0,
         0, 0, 0, 0, 0, 1, 0, 0
     ];
-    assert(bits_to_block(expected_output4) == [0x04; 16]);
-    assert(blocks_to_bits([0x04; 16]) == expected_output4);
+    assert(bits_to_stream(expected_output4) == [0x04; 16]);
+    assert(stream_to_bits([0x04; 16]) == expected_output4);
     let expected_output5 = [
         0, 0, 0, 0, 0, 1, 0, 1,
         0, 0, 0, 0, 0, 1, 0, 1,
@@ -237,8 +237,8 @@ fn test_blocks_to_bits() {
         0, 0, 0, 0, 0, 1, 0, 1,
         0, 0, 0, 0, 0, 1, 0, 1
     ];
-    assert(bits_to_block(expected_output5) == [0x05; 16]);
-    assert(blocks_to_bits([0x05; 16]) == expected_output5);
+    assert(bits_to_stream(expected_output5) == [0x05; 16]);
+    assert(stream_to_bits([0x05; 16]) == expected_output5);
 }
 
 #[test]

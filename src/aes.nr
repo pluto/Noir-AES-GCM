@@ -1,9 +1,29 @@
-use crate::utils::{byte_to_bits, bits_to_byte, State};
-// type State = [[u8; 4]; 4];
+use crate::utils::{byte_to_bits, bits_to_byte, Block};
 
 
-fn add_round_key(state: State, key: State) -> State {
-    let mut new_state: State = [[0; 4]; 4];
+// Input Block   Initial Round Key          Round Key             Final Round Key
+//     │                │                       │                       │
+//     ▼                ▼                       ▼                       ▼
+//  ┌─────────┐    ┌──────────┐ ┌────────┐ ┌──────────┐ ┌────────┐ ┌──────────┐
+//  │ Block   │──► │   Add    │ │  Sub   │ │   Mix    │ │  Sub   │ │   Add    │
+//  │         │    │  Round   │ │ Bytes  │ │ Columns  │ │ Bytes  │ │  Round   │
+//  │         │    │   Key    │ │        │ │          │ │        │ │   Key    │
+//  └─────────┘    └────┬─────┘ └───┬────┘ └────┬─────┘ └───┬────┘ └────┬─────┘
+//                      │           │           │           │           │
+//                      ▼           ▼           ▼           ▼           ▼
+//                 ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐
+//                 │ Round 0 │ │ Round 1 │ │ Round 2 │ │ Round   │ │  Final  │
+//                 │         │ │   to    │ │   to    │ │ Nr - 1  │ │  Round  │
+//                 │         │ │ Nr - 2  │ │ Nr - 1  │ │         │ │         │
+//                 └─────────┘ └─────────┘ └─────────┘ └─────────┘ └────┬────┘
+//                                                                      │
+//                                                                      ▼
+//                                                                 Ciphertext
+// pub(crate) fn aes(block: Block, key: State) -> Block {}
+
+
+fn add_round_key(state: Block, key: Block) -> Block {
+    let mut new_state: Block = [[0; 4]; 4];
     for i in 0..4 {
         for j in 0..4 {
             new_state[i][j] = state[i][j] ^ key[j][i];
@@ -24,8 +44,8 @@ fn add_round_key(state: State, key: State) -> State {
 // [s'2,c]   [1 1 2 3][s2,c]
 // [s'3,c]   [3 1 1 2][s3,c]
 // todo this can certainly be done with a few for loops
-fn mix_columns(state: State) -> State {
-    let mut new_state: State = state;
+fn mix_columns(state: Block) -> Block {
+    let mut new_state: Block = state;
     let c1 = [state[0][0], state[1][0], state[2][0], state[3][0]];
     let c2 = [state[0][1], state[1][1], state[2][1], state[3][1]];
     let c3 = [state[0][2], state[1][2], state[2][2], state[3][2]];
@@ -91,7 +111,7 @@ fn gfmulx(byte: u8) -> u8 {
 
 // ShiftRows: Performs circular left shift on each row
 // 0, 1, 2, 3 shifts for rows 0, 1, 2, 3 respectively
-fn shift_rows(state: State) -> State {
+fn shift_rows(state: Block) -> Block {
     let mut new_state = state;
     new_state[1] = [state[1][1], state[1][2], state[1][3], state[1][0]];
     new_state[2] = [state[2][2], state[2][3], state[2][0], state[2][1]];
@@ -181,13 +201,13 @@ fn gfmulx_aes() {
 
 #[test]
 fn test_shift_rows() {
-    let state: State = [
+    let state: Block = [
           [212, 224, 184, 30],
           [39, 191, 180, 65],
           [17, 152, 93, 82],
           [174, 241, 229, 48],
         ];
-    let expected: State = [
+    let expected: Block = [
           [212, 224, 184, 30],
           [191, 180, 65, 39],
           [93, 82, 17, 152],
@@ -207,20 +227,20 @@ fn test_sbox() {
 #[test]
 fn test_add_round_key() {
 
-    let state: State = [
+    let state: Block = [
         [4, 224, 72, 40],
         [102, 203, 248, 6],
         [129, 25, 211, 38],
         [229, 154, 122, 76],
     ];
-    let roundKey: State = [
+    let roundKey: Block = [
         [160, 250, 254, 23],
         [136, 84, 44, 177],
         [35, 163, 57, 57],
         [42, 108, 118, 5],
     ];
 
-    let newState: State = [
+    let newState: Block = [
         [164, 104, 107, 2],
         [156, 159, 91, 106],
         [127, 53, 234, 80],
