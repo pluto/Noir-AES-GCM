@@ -1,10 +1,144 @@
-
+use crate::utils::{byte_to_bits, bits_to_byte};
 type State = [[u8; 4]; 4];
 
 
-// fn mix_columns(state: State) -> State {
-//     // TODO
-// }
+#[test]
+fn test_gfmulx() {
+    assert(gfmulx(0x01) == 0x02);
+    assert(gfmulx(0x02) == 0x04);
+    assert(gfmulx(0x03) == 0x06);
+}
+
+
+// 2, 3, 1, 1,
+// 1, 2, 3, 1,
+// 1, 1, 2, 3, 
+// 3, 1, 1, 2,
+// such that the new column is defined as:
+// 
+// [2*col[0] XOR 3*col[1] XOR col[2] XOR col[3],
+//  col[0] XOR 2*col[1] XOR 3*col[2] XOR col[3],
+//  col[0] XOR col[1] XOR 2*col[2] XOR 3*col[3],
+//  3*col[0] XOR col[1] XOR col[2] XOR 2*col[3]]
+// 
+// where the multiplication is done in GF(2^8) mod the irreducible polynomial x^8 + x^4 + x^3 + x + 1
+// the multiplaction of 1 is multipication by 1, (binary 00000001)
+// the multiplaction of 2 is multipication by x, (binary 00000010)
+// the multiplaction of 3 is multipication by x + 1, (binary 00000011)
+
+// MixColumns: Applies the equation for each column:
+// [s'0,c]   [2 3 1 1][s0,c]
+// [s'1,c] = [1 2 3 1][s1,c]
+// [s'2,c]   [1 1 2 3][s2,c]
+// [s'3,c]   [3 1 1 2][s3,c]
+fn mix_columns(state: State) -> State {
+    let mut new_state = state;
+    for c in 0..4 {
+        new_state[0][c] = mix_column(state[0])[c];
+        new_state[1][c] = mix_column(state[1])[c];
+        new_state[2][c] = mix_column(state[2])[c];
+        new_state[3][c] = mix_column(state[3])[c];
+    }
+    new_state
+}
+
+#[test]
+fn tmix_columns() {
+    let state = [
+      [0xd4, 0xe0, 0xb8, 0x1e],
+      [0xbf, 0xb4, 0x41, 0x27],
+      [0x5d, 0x52, 0x11, 0x98],
+      [0x30, 0xae, 0xf1, 0xe5],
+    ];
+
+    let out = [
+      [0x04, 0xe0, 0x48, 0x28],
+      [0x66, 0xcb, 0xf8, 0x06],
+      [0x81, 0x19, 0xd3, 0x26],
+      [0xe5, 0x9a, 0x7a, 0x4c],
+    ];
+    println(mix_columns(state));
+    assert(mix_columns(state) == out);
+}
+
+fn mix_column(column: [u8; 4]) -> [u8; 4] {
+    let mut new_column = [0; 4];
+    new_column[0] = s0(column); // s0
+    new_column[1] = s1(column); // s1
+    new_column[2] = s2(column); // s2
+    new_column[3] = s3(column); // s3
+    new_column
+}
+
+fn s0(column: [u8; 4]) -> u8 {
+    gfmulx(column[0]) ^ gfmul3(column[1]) ^ column[2] ^ column[3]
+}
+
+fn s1(column: [u8; 4]) -> u8 {
+    // 0xd4,             0xbf,              0x5d,        0x30
+    column[0] ^ gfmulx(column[1]) ^ gfmul3(column[2]) ^ column[3]
+}
+
+fn s2(column: [u8; 4]) -> u8 {
+    column[0] ^ column[1] ^ gfmulx(column[2]) ^ gfmul3(column[3])
+}
+
+fn s3(column: [u8; 4]) -> u8 {
+    gfmul3(column[0]) ^ column[1] ^ column[2] ^ gfmulx(column[3])
+}
+
+#[test]
+fn ts0() {
+    assert(s0([0xd4, 0xbf, 0x5d, 0x30]) == 0x04);
+}
+
+#[test]
+fn ts1() {
+    assert(s1([0xd4, 0xbf, 0x5d, 0x30]) == 0x66);
+}
+
+#[test]
+fn ts2() {
+    assert(s2([0xd4, 0xbf, 0x5d, 0x30]) == 0x81);
+}
+
+#[test]
+fn ts3() {
+    assert(s3([0xd4, 0xbf, 0x5d, 0x30]) == 0xe5);
+}
+
+#[test]
+fn tmix_column() {
+    let column = [0xd4, 0xbf, 0x5d, 0x30];
+    let expected = [0x04, 0x66, 0x81, 0xe5];
+    assert(mix_column(column) == expected);
+}
+
+fn gfmul3(byte: u8) -> u8 {
+    gfmulx(byte) ^ byte
+}
+
+/// should left shift the bits by one then if the first bit (before the shift) is 1, then xor with 0x1b
+fn gfmulx(byte: u8) -> u8 {
+    let bits = byte_to_bits(byte);
+    let mut result = [0; 8];
+    for i in 0..7 {
+        result[i] = bits[i + 1];
+    }
+    let mut result_byte = bits_to_byte(result);
+    if bits[0] == 1 {
+        result_byte = result_byte ^ 0x1b;
+    }
+    result_byte
+}
+
+#[test]
+fn gfmulx_aes() {
+    assert(gfmulx(0x01) == 0x02);
+    assert(gfmulx(0x02) == 0x04);
+    assert(gfmulx(0x03) == 0x06);
+    assert(gfmulx(0xbf) == 0x65);
+}
 
 // ShiftRows: Performs circular left shift on each row
 // 0, 1, 2, 3 shifts for rows 0, 1, 2, 3 respectively
