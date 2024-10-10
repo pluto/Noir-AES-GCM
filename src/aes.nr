@@ -155,8 +155,6 @@ fn tkey_expansion(){
       [0xe1, 0x3f, 0x0c, 0xc8],
       [0xb6, 0x63, 0x0c, 0xa6],
     ];
-    println("actual \n");
-    println(key_expansion(key));
     assert(key_expansion(key) == keyExpanded);
 }
 

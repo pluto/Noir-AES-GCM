@@ -6,17 +6,15 @@ use crate::aes::{aes, add_round_key};
 // starting with fixed size input
 fn gctr(key: Stream, initial_counter_block: Block, plaintext: Stream) -> Stream {
     let mut ciphertext: Block = [[0; 4]; 4];
-    let mut counter_block: Block = initial_counter_block;
-
-
     let pt_blocks = stream_to_block(plaintext);
+    let mut counter_block = initial_counter_block;
     println("pt_blocks");
     println(pt_blocks);
     // for block in pt_blocks {
         // encrypt counter block
         let encrypted_counter_block = aes(counter_block, key);
         // xor with plaintext
-        ciphertext = add_round_key(encrypted_counter_block, pt_blocks);
+        ciphertext = add_cipher(encrypted_counter_block, pt_blocks);
         // update counter block
         counter_block = increment_counter_block(counter_block);
     // }
@@ -34,6 +32,17 @@ fn increment_counter_block(counter_block: Block) -> Block {
     stream[14] = incremented[2];
     stream[15] = incremented[3];
     stream_to_block(stream)
+}
+
+
+fn add_cipher(state: Block, key: Block) -> Block {
+    let mut new_state: Block = [[0; 4]; 4];
+    for i in 0..4 {
+        for j in 0..4 {
+            new_state[i][j] = state[i][j] ^ key[i][j];
+        }
+    }
+    new_state
 }
 
 /// carry adder on 4 byte words
