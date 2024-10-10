@@ -1,25 +1,6 @@
 type Stream = [u8; 16];
 type Block = [[u8; 4]; 4];
 
-pub(crate) fn byte_stream_blocks<N>(input: [u8; N]) -> [Block; N / 16] {
-    let nBlocks = input.len() / 16;
-    let mut blocks = [Block::default(); nBlocks];
-    for i in 0..nBlocks {
-        for j in 0..16 {
-            blocks[i][j] = input[i * 16 + j];
-        }
-    }
-    blocks
-}
-
-#[test]
-fn test_to_blocks() {
-    let input = [0u8; 16];
-    let blocks = byte_stream_to_blocks(input);
-    assert(blocks.len() == 1);
-    assert(blocks[0] == input);
-}
-
 pub(crate) fn stream_xor(stream1: Stream, stream2: Stream) -> Stream {
     let mut result: Stream = [0; 16];
     for i in 0..16 {
