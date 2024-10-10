@@ -1,25 +1,39 @@
 
 
-use crate::utils::{stream_xor, stream_to_block, Stream, Block};
+use crate::utils::{stream_xor, stream_to_block, block_to_stream, Stream, Block};
+use crate::aes::{aes, add_round_key};
 
 // starting with fixed size input
 fn gctr(key: Stream, initial_counter_block: Block, plaintext: Stream) -> Stream {
-    let mut ciphertext: [u8; 16] = [0; 16];
-    let mut counter_block = initial_counter_block;
+    let mut ciphertext: Block = [[0; 4]; 4];
+    let mut counter_block: Block = initial_counter_block;
 
-    let pt_blocks = [stream_to_block(plaintext)];
-    for chunk in pt_blocks {
-        let encrypted_counter_block = aes_encrypt(key, counter_block);
-        let mut block = [0u8; 16];
-        for (i, &byte) in chunk.iter().enumerate() {
-            block[i] = byte;
-        }
-        let encrypted_block = stream_xor(encrypted_counter_block, block);
-        ciphertext.extend_from_slice(&encrypted_block[..chunk.len()]);
+
+    let pt_blocks = stream_to_block(plaintext);
+    println("pt_blocks");
+    println(pt_blocks);
+    // for block in pt_blocks {
+        // encrypt counter block
+        let encrypted_counter_block = aes(counter_block, key);
+        // xor with plaintext
+        ciphertext = add_round_key(encrypted_counter_block, pt_blocks);
+        // update counter block
         counter_block = increment_counter_block(counter_block);
-    }
+    // }
+    println("ciphertext");
+    println(ciphertext);
+    block_to_stream(ciphertext)
+}
 
-    ciphertext
+fn increment_counter_block(counter_block: Block) -> Block {
+    let mut stream = block_to_stream(counter_block);
+    let mut word = [stream[12], stream[13], stream[14], stream[15]];
+    let incremented = increment_word(word);
+    stream[12] = incremented[0];
+    stream[13] = incremented[1];
+    stream[14] = incremented[2];
+    stream[15] = incremented[3];
+    stream_to_block(stream)
 }
 
 /// carry adder on 4 byte words
