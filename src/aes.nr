@@ -51,9 +51,7 @@ pub(crate) fn key_expansion(key: [u8; 16]) -> [[u8; 4]; 44] {
     }
 
     // while i ≤ 4 ∗Nr +3 do
-    for round in 4..(4 * nr + 3) {
-        println("round");
-        println(round);
+    for round in 4..(4 * nr + 3) + 1 {
         // temp ← w[i−1]
         let mut temp = key_expanded[round - 1];
 
@@ -62,8 +60,7 @@ pub(crate) fn key_expansion(key: [u8; 16]) -> [[u8; 4]; 44] {
             // temp ← SUBWORD(ROTWORD(temp))⊕Rcon[i/Nk]
             temp = sub_word(rot_word(temp));
             temp = word_xor(temp, round_constant((round / nk) - 1));
-            println("temp after round constant");
-            println(temp);
+
         }
         // else if Nk > 6 and i mod Nk = 4 then
         // } else if nk > 6 & round % nk == 4 {
@@ -72,11 +69,7 @@ pub(crate) fn key_expansion(key: [u8; 16]) -> [[u8; 4]; 44] {
         // }
 
         //  w[i] ← w[i−Nk]⊕temp
-        println("key_expanded before word xor");
-        println(key_expanded[round - nk]);
         key_expanded[round] = word_xor(key_expanded[round - nk], temp);
-        println("key_expanded after word xor");
-        println(key_expanded[round]);
         //  i ← i+1 
     }
 
