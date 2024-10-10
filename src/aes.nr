@@ -51,7 +51,7 @@ pub(crate) fn key_expansion(key: [u8; 16]) -> [[u8; 4]; 44] {
     }
 
     // while i ≤ 4 ∗Nr +3 do
-    for round in 4..(nr +2) {
+    for round in 4..(4 * nr + 3) {
         println("round");
         println(round);
         // temp ← w[i−1]
