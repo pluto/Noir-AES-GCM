@@ -9,6 +9,14 @@ pub(crate) fn stream_xor(stream1: Stream, stream2: Stream) -> Stream {
     result
 }
 
+pub(crate) fn word_xor(word1: [u8; 4], word2: [u8; 4]) -> [u8; 4] {
+    let mut result: [u8; 4] = [0; 4];
+    for i in 0..4 {
+        result[i] = word1[i] ^ word2[i];
+    }
+    result
+}
+
 pub(crate) fn stream_to_block(stream: Stream) -> Block {
     let mut block: Block = [[0; 4]; 4];
     for i in 0..4 {
