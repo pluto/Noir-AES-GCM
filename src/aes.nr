@@ -1,4 +1,4 @@
-use crate::utils::{byte_to_bits, bits_to_byte, Block, word_xor};
+use crate::utils::{byte_to_bits, bits_to_byte, Block, word_xor, Stream};
 
 
 // Input Block   Initial Round Key          Round Key             Final Round Key
@@ -19,12 +19,43 @@ use crate::utils::{byte_to_bits, bits_to_byte, Block, word_xor};
 //                                                                      │
 //                                                                      ▼
 //                                                                 Ciphertext
-// pub(crate) fn aes(block: Block, key: Stream) -> Block {
-//     // TODO(WJ 2024-10-09): implement Key Expansion
-//     let state = add_round_key(block, key);
-//     state
-// }
+pub(crate) fn aes(block: Block, key: Stream) -> Block {
+    // TODO(WJ 2024-10-09): implement Key Expansion
+    let key_expanded = key_expansion(key);
+    let first_round_key: Block = [key_expanded[0], key_expanded[1], key_expanded[2], key_expanded[3]];
+    let mut state = add_round_key(block, first_round_key);
 
+    for round in 1..10 {
+        state = sub_bytes(state);
+        state = shift_rows(state);
+        state = mix_columns(state);
+        let round_key: Block = [key_expanded[round * 4], key_expanded[round * 4 + 1], key_expanded[round * 4 + 2], key_expanded[round * 4 + 3]];
+        state = add_round_key(state, round_key);
+    }
+    state = sub_bytes(state);
+    state = shift_rows(state);
+    let final_round_key: Block = [key_expanded[40], key_expanded[41], key_expanded[42], key_expanded[43]];
+    state = add_round_key(state, final_round_key);
+    state
+}
+
+#[test]
+fn test_aes() {
+    let block: Block = [
+          [0x32, 0x88, 0x31, 0xe0],
+          [0x43, 0x5a, 0x31, 0x37],
+          [0xf6, 0x30, 0x98, 0x07],
+          [0xa8, 0x8d, 0xa2, 0x34],
+        ];
+    let key: Stream = [0x2b, 0x7e, 0x15, 0x16, 0x28, 0xae, 0xd2, 0xa6, 0xab, 0xf7, 0x15, 0x88, 0x09, 0xcf, 0x4f, 0x3c];
+    let cipher: Block = [
+          [0x39, 0x02, 0xdc, 0x19],
+          [0x25, 0xdc, 0x11, 0x6a],
+          [0x84, 0x09, 0x85, 0x0b],
+          [0x1d, 0xfb, 0x97, 0x32],
+        ];
+    assert(aes(block, key) == cipher);
+}
 
 // @param nk: number of keys can be 4, 6, or 8
 // @param nr: number of rounds which can be 10, 12, 14 for AES 128, 192, 256
@@ -280,6 +311,15 @@ fn shift_rows(state: Block) -> Block {
     new_state
 }
 
+fn sub_bytes(state: Block) -> Block {
+    let mut new_state = state;
+    for i in 0..4 {
+        for j in 0..4 {
+            new_state[i][j] = sbox(state[i][j]);
+        }
+    }
+    new_state
+}
 
 /// Sbox first
 /// the sbox is a 16x16 array of bytes used to looks up values
