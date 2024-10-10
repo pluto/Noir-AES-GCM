@@ -21,7 +21,7 @@ pub(crate) fn stream_to_block(stream: Stream) -> Block {
     let mut block: Block = [[0; 4]; 4];
     for i in 0..4 {
         for j in 0..4 {
-            block[j][i] = stream[i * 4 + j]; // Change the indexing to column-major order
+            block[j][i] = stream[i * 4 + j];
         }
     }
     block

@@ -20,7 +20,6 @@ use crate::utils::{byte_to_bits, bits_to_byte, Block, word_xor, Stream};
 //                                                                      ▼
 //                                                                 Ciphertext
 pub(crate) fn aes(block: Block, key: Stream) -> Block {
-    // TODO(WJ 2024-10-09): implement Key Expansion
     let key_expanded = key_expansion(key);
     let first_round_key: Block = [key_expanded[0], key_expanded[1], key_expanded[2], key_expanded[3]];
     let mut state = add_round_key(block, first_round_key);
@@ -62,8 +61,6 @@ fn test_aes() {
 // @inputs key: array of nk*4 bytes representing the key
 // @outputs keyExpanded: array of (nr+1)*4 words i.e for AES 128, 192, 256 it will be  44, 52, 60 words
 pub(crate) fn key_expansion(key: [u8; 16]) -> [[u8; 4]; 44] {
-    // assert(nk = 4 | nk = 6 | nk = 8);
-    // fix nk to 4 and nr to 10 for AES 128
     let nk = 4;
     let nr = 10;
 
@@ -256,10 +253,10 @@ fn mix_columns(state: Block) -> Block {
 
 fn mix_column(column: [u8; 4]) -> [u8; 4] {
     let mut new_column = [0; 4];
-    new_column[0] = s0(column); // s0
-    new_column[1] = s1(column); // s1
-    new_column[2] = s2(column); // s2
-    new_column[3] = s3(column); // s3
+    new_column[0] = s0(column);
+    new_column[1] = s1(column);
+    new_column[2] = s2(column);
+    new_column[3] = s3(column);
     new_column
 }
 

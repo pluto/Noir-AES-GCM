@@ -4,22 +4,19 @@ use crate::utils::{stream_xor, stream_to_block, block_to_stream, Stream, Block};
 use crate::aes::{aes, add_round_key};
 
 // starting with fixed size input
+// TODO(WJ 2024-10-10): make this work for arbitrary length input
 fn gctr(key: Stream, initial_counter_block: Block, plaintext: Stream) -> Stream {
     let mut ciphertext: Block = [[0; 4]; 4];
-    let pt_blocks = stream_to_block(plaintext);
+    let pt_blocks = [stream_to_block(plaintext)];
     let mut counter_block = initial_counter_block;
-    println("pt_blocks");
-    println(pt_blocks);
-    // for block in pt_blocks {
+    for block in pt_blocks {
         // encrypt counter block
         let encrypted_counter_block = aes(counter_block, key);
         // xor with plaintext
-        ciphertext = add_cipher(encrypted_counter_block, pt_blocks);
+        ciphertext = add_cipher(encrypted_counter_block, block);
         // update counter block
         counter_block = increment_counter_block(counter_block);
-    // }
-    println("ciphertext");
-    println(ciphertext);
+    }
     block_to_stream(ciphertext)
 }
 
@@ -86,7 +83,6 @@ fn test_gctr() {
     let initial_counter_block: Block = [[0x7f,0x48,0x12,0x00],[0x6d,0x3e,0xfa,0x00],[0x90,0x8c,0x55,0x00],[0x41,0x14,0x2a,0x02]];
     let plaintext = [0x84, 0xc9, 0x07, 0xb1, 0x1a, 0xe3, 0xb7, 0x9f,0xc4, 0x45, 0x1d, 0x1b, 0xf1, 0x7f, 0x4a, 0x99];
     let expected_ciphertext = [0xfd, 0xb4, 0xaa, 0xfa, 0x35, 0x19, 0xd3, 0xc0,0x55, 0xbe, 0x8b, 0x34, 0x77, 0x64, 0xea, 0x33];
-
     let ciphertext = gctr(key, initial_counter_block, plaintext);
     assert(ciphertext == expected_ciphertext);
 }
