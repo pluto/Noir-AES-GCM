@@ -20,7 +20,6 @@ use crate::utils::{byte_to_bits, bits_to_byte, Block, word_xor, Stream};
 //                                                                      ▼
 //                                                                 Ciphertext
 pub(crate) fn aes(block: Block, key: Stream) -> Block {
-    // TODO(WJ 2024-10-09): implement Key Expansion
     let key_expanded = key_expansion(key);
     let first_round_key: Block = [key_expanded[0], key_expanded[1], key_expanded[2], key_expanded[3]];
     let mut state = add_round_key(block, first_round_key);
@@ -57,23 +56,14 @@ fn test_aes() {
     assert(aes(block, key) == cipher);
 }
 
-// @param nk: number of keys can be 4, 6, or 8
-// @param nr: number of rounds which can be 10, 12, 14 for AES 128, 192, 256
 // @inputs key: array of nk*4 bytes representing the key
-// @outputs keyExpanded: array of (nr+1)*4 words i.e for AES 128, 192, 256 it will be  44, 52, 60 words
+// @outputs keyExpanded: array of (nr+1)*4 words i.e for AES 128 will be 44 words
 pub(crate) fn key_expansion(key: [u8; 16]) -> [[u8; 4]; 44] {
-    // assert(nk = 4 | nk = 6 | nk = 8);
-    // fix nk to 4 and nr to 10 for AES 128
-    let nk = 4;
-    let nr = 10;
-
-    let total_words = 44;
-    let effective_rounds = 10;
 
     let mut key_expanded: [[u8; 4]; 44] = [[0; 4]; 44];
 
     // first nk words are the key divided into 4 byte words
-    for i in 0..nk {
+    for i in 0..4 {
         let mut temp = [0; 4];
         for j in 0..4 {
             temp[j] = key[i * 4 + j];
@@ -82,26 +72,19 @@ pub(crate) fn key_expansion(key: [u8; 16]) -> [[u8; 4]; 44] {
     }
 
     // while i ≤ 4 ∗Nr +3 do
-    for round in 4..(4 * nr + 3) + 1 {
+    for round in 4..44 {
         // temp ← w[i−1]
         let mut temp = key_expanded[round - 1];
 
         // if i mod Nk = 0 then
-        if round % nk == 0 {
+        if round % 4 == 0 {
             // temp ← SUBWORD(ROTWORD(temp))⊕Rcon[i/Nk]
             temp = sub_word(rot_word(temp));
-            temp = word_xor(temp, round_constant((round / nk) - 1));
+            temp = word_xor(temp, round_constant((round / 4) - 1));
 
         }
-        // else if Nk > 6 and i mod Nk = 4 then
-        // } else if nk > 6 & round % nk == 4 {
-        //     // temp ← SUBWORD(temp)
-        //     temp = sub_word(temp);
-        // }
-
         //  w[i] ← w[i−Nk]⊕temp
-        key_expanded[round] = word_xor(key_expanded[round - nk], temp);
-        //  i ← i+1 
+        key_expanded[round] = word_xor(key_expanded[round - 4], temp);
     }
 
     key_expanded
@@ -111,18 +94,18 @@ pub(crate) fn key_expansion(key: [u8; 16]) -> [[u8; 4]; 44] {
 fn tkey_expansion(){
     let key = [0x2b, 0x7e, 0x15, 0x16, 0x28, 0xae, 0xd2, 0xa6, 0xab, 0xf7, 0x15, 0x88, 0x09, 0xcf, 0x4f, 0x3c];
     let keyExpanded = [
-      [0x2b, 0x7e, 0x15, 0x16], // got this
-      [0x28, 0xae, 0xd2, 0xa6], // got this
-      [0xab, 0xf7, 0x15, 0x88], // got this
-      [0x09, 0xcf, 0x4f, 0x3c], // got this
-      [0xa0, 0xfa, 0xfe, 0x17], // got this
-      [0x88, 0x54, 0x2c, 0xb1], // got this
-      [0x23, 0xa3, 0x39, 0x39], // got this
-      [0x2a, 0x6c, 0x76, 0x05], // got this
-      [0xf2, 0xc2, 0x95, 0xf2], // got this
-      [0x7a, 0x96, 0xb9, 0x43], // got this
-      [0x59, 0x35, 0x80, 0x7a], // got this
-      [0x73, 0x59, 0xf6, 0x7f], // got this
+      [0x2b, 0x7e, 0x15, 0x16],
+      [0x28, 0xae, 0xd2, 0xa6],
+      [0xab, 0xf7, 0x15, 0x88],
+      [0x09, 0xcf, 0x4f, 0x3c],
+      [0xa0, 0xfa, 0xfe, 0x17],
+      [0x88, 0x54, 0x2c, 0xb1],
+      [0x23, 0xa3, 0x39, 0x39],
+      [0x2a, 0x6c, 0x76, 0x05],
+      [0xf2, 0xc2, 0x95, 0xf2],
+      [0x7a, 0x96, 0xb9, 0x43],
+      [0x59, 0x35, 0x80, 0x7a],
+      [0x73, 0x59, 0xf6, 0x7f],
       [0x3d, 0x80, 0x47, 0x7d],
       [0x47, 0x16, 0xfe, 0x3e],
       [0x1e, 0x23, 0x7e, 0x44],
@@ -156,8 +139,6 @@ fn tkey_expansion(){
       [0xe1, 0x3f, 0x0c, 0xc8],
       [0xb6, 0x63, 0x0c, 0xa6],
     ];
-    println("actual \n");
-    println(key_expansion(key));
     assert(key_expansion(key) == keyExpanded);
 }
 
@@ -259,10 +240,10 @@ fn mix_columns(state: Block) -> Block {
 
 fn mix_column(column: [u8; 4]) -> [u8; 4] {
     let mut new_column = [0; 4];
-    new_column[0] = s0(column); // s0
-    new_column[1] = s1(column); // s1
-    new_column[2] = s2(column); // s2
-    new_column[3] = s3(column); // s3
+    new_column[0] = s0(column);
+    new_column[1] = s1(column);
+    new_column[2] = s2(column);
+    new_column[3] = s3(column);
     new_column
 }
 
