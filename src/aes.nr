@@ -56,21 +56,14 @@ fn test_aes() {
     assert(aes(block, key) == cipher);
 }
 
-// @param nk: number of keys can be 4, 6, or 8
-// @param nr: number of rounds which can be 10, 12, 14 for AES 128, 192, 256
 // @inputs key: array of nk*4 bytes representing the key
-// @outputs keyExpanded: array of (nr+1)*4 words i.e for AES 128, 192, 256 it will be  44, 52, 60 words
+// @outputs keyExpanded: array of (nr+1)*4 words i.e for AES 128 will be 44 words
 pub(crate) fn key_expansion(key: [u8; 16]) -> [[u8; 4]; 44] {
-    let nk = 4;
-    let nr = 10;
-
-    let total_words = 44;
-    let effective_rounds = 10;
 
     let mut key_expanded: [[u8; 4]; 44] = [[0; 4]; 44];
 
     // first nk words are the key divided into 4 byte words
-    for i in 0..nk {
+    for i in 0..4 {
         let mut temp = [0; 4];
         for j in 0..4 {
             temp[j] = key[i * 4 + j];
@@ -79,25 +72,19 @@ pub(crate) fn key_expansion(key: [u8; 16]) -> [[u8; 4]; 44] {
     }
 
     // while i ≤ 4 ∗Nr +3 do
-    for round in 4..(4 * nr + 3) + 1 {
+    for round in 4..44 {
         // temp ← w[i−1]
         let mut temp = key_expanded[round - 1];
 
         // if i mod Nk = 0 then
-        if round % nk == 0 {
+        if round % 4 == 0 {
             // temp ← SUBWORD(ROTWORD(temp))⊕Rcon[i/Nk]
             temp = sub_word(rot_word(temp));
-            temp = word_xor(temp, round_constant((round / nk) - 1));
+            temp = word_xor(temp, round_constant((round / 4) - 1));
 
         }
-        // else if Nk > 6 and i mod Nk = 4 then
-        // } else if nk > 6 & round % nk == 4 {
-        //     // temp ← SUBWORD(temp)
-        //     temp = sub_word(temp);
-        // }
-
         //  w[i] ← w[i−Nk]⊕temp
-        key_expanded[round] = word_xor(key_expanded[round - nk], temp);
+        key_expanded[round] = word_xor(key_expanded[round - 4], temp);
     }
 
     key_expanded

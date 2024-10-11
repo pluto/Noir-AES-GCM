@@ -15,12 +15,12 @@ fn gctr(key: Stream, initial_counter_block: Block, plaintext: Stream) -> Stream 
         // xor with plaintext
         ciphertext = add_cipher(encrypted_counter_block, block);
         // update counter block
-        counter_block = increment_counter_block(counter_block);
+        counter_block = increment_32(counter_block);
     }
     block_to_stream(ciphertext)
 }
 
-fn increment_counter_block(counter_block: Block) -> Block {
+fn increment_32(counter_block: Block) -> Block {
     let mut stream = block_to_stream(counter_block);
     let mut word = [stream[12], stream[13], stream[14], stream[15]];
     let incremented = increment_word(word);
